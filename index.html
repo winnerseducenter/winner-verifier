@@ -25,6 +25,8 @@
     }
     .banner-valid { background-color: #ecfdf5; color: #059669; border: 1.5px solid #a7f3d0; }
     .banner-redeemed { background-color: #fff1f2; color: #9f1239; border: 1.5px solid #fecdd3; }
+    .banner-success-action { background-color: #10b981; color: #ffffff; border: 1.5px solid #059669; }
+
     .redeem-time-sub { display: block; font-size: 14px; color: #b91c1c; margin-top: 4px; font-weight: 700; }
 
     .ticket-serial-title { font-size: 14px; font-weight: 700; color: #64748b; letter-spacing: 1.5px; text-transform: uppercase; }
@@ -36,13 +38,13 @@
     .info-label { font-size: 17px; font-weight: 600; color: #64748b; }
     .info-value { font-size: 21px; font-weight: 800; color: #0f172a; text-align: right; }
 
-    /* 現代扁平化實色按鈕 */
+    /* 舒服、正向的翡翠綠按鈕 */
     .btn-redeem { 
-      background-color: #e11d48; border: none; font-size: 20px; font-weight: 800; 
+      background-color: #059669; border: none; font-size: 20px; font-weight: 800; 
       padding: 16px 20px; border-radius: 14px; color: white; 
       cursor: pointer; transition: all 0.2s ease;
     }
-    .btn-redeem:active { background-color: #be123c; transform: scale(0.97); }
+    .btn-redeem:active { background-color: #047857; transform: scale(0.97); }
 
     .btn-scan-next {
       background-color: #f1f5f9; color: #475569; border: 1px solid #cbd5e1;
@@ -70,14 +72,13 @@
       </div>
     </div>
 
-    <!-- 載入中 -->
-    <div id="loading" class="text-center my-4 d-none">
-      <div class="spinner-border text-danger" role="status" style="width: 3rem; height: 3rem;"></div>
-      <div id="loadingText" class="mt-3 text-secondary fw-bold fs-5">正在連線資料庫...</div>
+    <!-- 錯誤提示與獨立掃描重試區 -->
+    <div id="errorAlert" class="alert alert-danger d-none fw-bold text-center p-3 mb-3" role="alert"></div>
+    <div id="errorActionArea" class="text-center mb-3 d-none">
+      <button class="btn btn-scan-next w-100 py-3 shadow-sm" onclick="scanNextStudent()">
+        🔄 繼續掃描下一位學生
+      </button>
     </div>
-
-    <!-- 錯誤提示 -->
-    <div id="errorAlert" class="alert alert-danger d-none fw-bold text-center p-3" role="alert"></div>
 
     <!-- 自動感應掃描區 -->
     <div id="scannerSection" class="card-box p-3 text-center mb-3 d-none">
@@ -110,7 +111,7 @@
       </div>
 
       <button id="btnRedeem" class="btn btn-redeem w-100 mb-3 d-none" onclick="submitRedeem()">
-        🥩 確認核銷・交付雞胸肉
+        ✓ 確認核銷・交付雞胸肉
       </button>
 
       <button id="btnScanNext" class="btn btn-scan-next w-100 d-none" onclick="scanNextStudent()">
@@ -142,6 +143,7 @@
       document.getElementById('scannerSection').classList.remove('d-none');
       document.getElementById('ticketCard').classList.add('d-none');
       document.getElementById('errorAlert').classList.add('d-none');
+      document.getElementById('errorActionArea').classList.add('d-none');
 
       codeReader = new ZXing.BrowserQRCodeReader();
       codeReader.decodeFromVideoDevice(undefined, 'videoPreview', function(result, err) {
@@ -152,9 +154,7 @@
             fetchTicket(matchedHash);
           }
         }
-      }).catch(function(err) {
-        // 忽略找不到相機的報錯
-      });
+      }).catch(function(err) {});
     }
 
     function stopScanner() {
@@ -164,6 +164,8 @@
 
     function scanNextStudent() {
       document.getElementById('ticketCard').classList.add('d-none');
+      document.getElementById('errorAlert').classList.add('d-none');
+      document.getElementById('errorActionArea').classList.add('d-none');
       initContinuousScanner();
     }
 
@@ -172,22 +174,19 @@
       return m ? decodeURIComponent(m[1]) : "";
     }
 
-    // 抓取票券資料
     function fetchTicket(hash) {
       currentTargetHash = hash;
-      document.getElementById('loading').classList.remove('d-none');
       document.getElementById('ticketCard').classList.add('d-none');
       document.getElementById('errorAlert').classList.add('d-none');
+      document.getElementById('errorActionArea').classList.add('d-none');
 
       fetch(GAS_API_URL + "?action=getDetails&hash=" + encodeURIComponent(hash))
         .then(res => res.json())
         .then(res => {
-          document.getElementById('loading').classList.add('d-none');
           if (!res.success) {
-            showError(res.message || res.msg);
-            document.getElementById('btnScanNext').classList.remove('d-none');
-            document.getElementById('ticketCard').classList.remove('d-none');
-            document.getElementById('btnRedeem').classList.add('d-none');
+            // 掃描到無效票券時：徹底隱藏票卡，只留頂部紅底錯誤與專屬重試按鈕
+            showError(res.message || res.msg || "❌ 查無此票券");
+            document.getElementById('errorActionArea').classList.remove('d-none');
             return;
           }
 
@@ -222,39 +221,42 @@
           }
         })
         .catch(err => {
-          document.getElementById('loading').classList.add('d-none');
-          showError("查詢出錯，請確認網路連線或 GAS 網址是否正確。");
+          showError("❌ 網路連線出錯，請檢查網路！");
+          document.getElementById('errorActionArea').classList.remove('d-none');
         });
     }
 
-    // 送出核銷請求
     function submitRedeem() {
-      if (!confirm("確定要現場核銷此兌換券，並交付烤雞胸肉 1 份嗎？")) return;
+      if (!confirm("確定要核銷此兌換券並交付雞胸肉嗎？")) return;
 
       var btn = document.getElementById('btnRedeem');
       btn.disabled = true;
-      btn.innerText = "⏳ 正在寫入資料...";
+      btn.innerText = "⏳ 處理中...";
 
       fetch(GAS_API_URL + "?action=redeem&hash=" + encodeURIComponent(currentTargetHash) + "&staff=" + encodeURIComponent(targetStaff))
         .then(res => res.json())
         .then(res => {
-          btn.disabled = false;
-          btn.innerText = "🥩 確認核銷・交付雞胸肉";
-          // 精準接取雙向相容的回傳訊息，杜絕 undefined[cite: 11]
-          alert(res.message || res.msg || "✅ 核銷成功！");
           if (res.success) {
-            fetchTicket(currentTargetHash); 
+            var banner = document.getElementById('topStatusBanner');
+            banner.className = "top-status-banner banner-success-action";
+            banner.innerHTML = "🎉 核銷成功！請現場交付雞肉";
+            
+            btn.classList.add('d-none');
+            document.getElementById('btnScanNext').classList.remove('d-none');
+          } else {
+            btn.disabled = false;
+            btn.innerText = "✓ 確認核銷・交付雞胸肉";
+            alert(res.message || res.msg);
           }
         })
         .catch(err => {
           btn.disabled = false;
-          btn.innerText = "🥩 確認核銷・交付雞胸肉";
-          alert("核銷失敗，請檢查網路連線！");
+          btn.innerText = "✓ 確認核銷・交付雞胸肉";
+          alert("核銷請求失敗，請檢查網路連線！");
         });
     }
 
     function showError(msg) {
-      document.getElementById('loading').classList.add('d-none');
       var box = document.getElementById('errorAlert');
       box.innerText = msg;
       box.classList.remove('d-none');
