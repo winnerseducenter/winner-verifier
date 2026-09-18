@@ -18,7 +18,6 @@
     }
     .ticket-header { font-size: 1.35rem; font-weight: bold; color: #0f172a; }
     
-    /* 狀態 Banner 樣式 */
     .top-status-banner {
       border-radius: 16px; padding: 16px; text-align: center; font-size: 18px; 
       font-weight: 800; margin-bottom: 20px; display: flex; align-items: center; 
@@ -26,14 +25,14 @@
     }
     .banner-valid { background-color: #ecfdf5; color: #059669; border: 1.5px solid #a7f3d0; }
     .banner-redeemed { background-color: #fff1f2; color: #9f1239; border: 1.5px solid #fecdd3; }
-    
-    /* 核銷成功專用：改用喜氣、醒目的磚紅色系，與未領取的綠色完美區隔 */
     .banner-success-action { background-color: #fff1f2; color: #9f1239; border: 1.5px solid #fecdd3; box-shadow: 0 4px 12px rgba(159, 18, 57, 0.12); }
 
     .redeem-time-sub { display: block; font-size: 14px; color: #b91c1c; margin-top: 4px; font-weight: 700; }
 
     .ticket-serial-title { font-size: 13px; font-weight: 700; color: #64748b; letter-spacing: 1.5px; text-transform: uppercase; }
-    .ticket-number { font-size: 52px; font-weight: 900; color: #0f172a; line-height: 1.1; margin-bottom: 20px; }
+    
+    /* 恢復原本醒目的暖橘色序號 */
+    .ticket-number { font-size: 52px; font-weight: 900; color: #D97706; line-height: 1.1; margin-bottom: 20px; }
 
     .info-table { background-color: #f8fafc; border-radius: 16px; padding: 18px 20px; margin-bottom: 24px; border: 1px solid #e2e8f0; }
     .info-row { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px dashed #cbd5e1; }
@@ -41,7 +40,6 @@
     .info-label { font-size: 17px; font-weight: 600; color: #64748b; }
     .info-value { font-size: 21px; font-weight: 800; color: #0f172a; text-align: right; }
 
-    /* 確認核銷按鈕：清爽翡翠綠 */
     .btn-redeem { 
       background-color: #10b981; border: none; font-size: 19px; font-weight: 800; 
       padding: 16px 20px; border-radius: 16px; color: white; 
@@ -50,7 +48,6 @@
     }
     .btn-redeem:active { background-color: #059669; transform: scale(0.97); }
 
-    /* 底部清爽外框按鈕區 */
     .btn-scan-next {
       background-color: #ffffff; color: #0f172a; border: 2px solid #e2e8f0;
       font-size: 18px; font-weight: 700; padding: 14px 20px; border-radius: 16px;
@@ -69,7 +66,6 @@
 <body class="p-3">
   <div class="container" style="max-width: 480px;">
 
-    <!-- 頂端身分 -->
     <div class="text-center mb-3">
       <h5 class="fw-bold ticket-header mb-1">🍗 贏家文教中秋吃肉憑證</h5>
       <div class="mt-2">
@@ -77,7 +73,6 @@
       </div>
     </div>
 
-    <!-- 錯誤提示與獨立掃描重試框框 -->
     <div id="errorAlert" class="alert alert-danger d-none fw-bold text-center p-3 mb-3 rounded-4 shadow-sm" role="alert"></div>
     <div id="errorActionArea" class="text-center mb-3 d-none">
       <button class="btn btn-scan-next w-100 py-3 shadow-sm" onclick="scanNextStudent()">
@@ -85,7 +80,6 @@
       </button>
     </div>
 
-    <!-- 自動感應掃描區 -->
     <div id="scannerSection" class="card-box p-3 text-center mb-3 d-none">
       <h5 class="fw-bold text-success mb-2">🟢 自動感應掃描中</h5>
       <div id="scannerWrapper">
@@ -95,7 +89,6 @@
       <p class="text-secondary small mt-3">將鏡頭對準學生 QR Code，系統會<strong>自動感應讀取</strong></p>
     </div>
 
-    <!-- 學生憑證資訊卡片 -->
     <div id="ticketCard" class="card-box text-center d-none">
       <div id="topStatusBanner" class="top-status-banner banner-valid">
         <span>✅ 憑證有效（尚未領取）</span>
@@ -219,7 +212,7 @@
           } else {
             banner.className = "top-status-banner banner-valid";
             banner.innerHTML = "<span>✅ 憑證有效・尚未領取</span>";
-            btn.classList.add('d-none'); // 預設安全起見，等下防呆
+            btn.classList.add('d-none');
             btn.classList.remove('d-none');
             nextBtn.classList.remove('d-none');
           }
@@ -241,7 +234,6 @@
         .then(res => res.json())
         .then(res => {
           if (res.success) {
-            // 核銷成功：無縫切換成醒目的磚紅色成功提示，與未領取的綠色做出清楚區隔
             var banner = document.getElementById('topStatusBanner');
             banner.className = "top-status-banner banner-success-action";
             banner.innerHTML = "🎉 核銷成功！請現場交付雞肉";
