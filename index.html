@@ -1,264 +1,361 @@
 <!DOCTYPE html>
-<html lang="zh-TW">
+<html>
 <head>
+  <base target="_top">
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-  <title>贏家文教中秋吃肉憑證核銷系統</title>
+  <title>贏家文教中心 - 搶肉憑證與核銷系統</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-  <!-- ZXing 全自動對焦即時鏡頭掃描引擎 (GitHub Pages 頂級網域 100% 允許相機) -->
-  <script src="https://unpkg.com/@zxing/library@latest"></script>
+  <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
   <style>
-    body { background-color: #f1f5f9; color: #1e293b; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-    .card-box { background: #ffffff; border-radius: 16px; border: 1px solid #cbd5e1; box-shadow: 0 4px 15px rgba(0,0,0,0.06); }
-    .ticket-header { font-size: 1.4rem; font-weight: bold; color: #dc2626; }
-    .ticket-number { font-size: 2.5rem; font-weight: 800; color: #d97706; }
-    .btn-redeem { background: linear-gradient(135deg, #e11d48, #be123c); border: none; font-size: 1.25rem; font-weight: bold; padding: 14px; border-radius: 12px; color: white; }
-    .btn-redeem:hover { background: linear-gradient(135deg, #be123c, #9f1239); color: white; }
-    .staff-badge { background-color: #0f172a; color: white; padding: 6px 14px; border-radius: 20px; font-size: 0.85rem; font-weight: bold; }
-    .guest-badge { background-color: #64748b; color: white; padding: 6px 14px; border-radius: 20px; font-size: 0.85rem; }
-    #scannerWrapper { position: relative; width: 100%; max-width: 380px; margin: 0 auto; border-radius: 16px; overflow: hidden; background: #000; }
-    #videoPreview { width: 100%; height: 280px; object-fit: cover; display: block; }
-    .scanner-laser { position: absolute; top: 50%; left: 10%; width: 80%; height: 2px; background: #ef4444; box-shadow: 0 0 8px #ef4444; animation: scanMove 2s infinite ease-in-out; }
-    @keyframes scanMove { 0%, 100% { top: 20%; } 50% { top: 80%; } }
+    body {
+      background-color: #f8fafc;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+      margin: 0;
+      padding: 20px 12px;
+    }
+    .ticket-card {
+      background: #ffffff;
+      border-radius: 24px;
+      box-shadow: 0 10px 35px rgba(0, 0, 0, 0.08);
+      padding: 28px 22px;
+      margin-top: 8px;
+      border: 1px solid #e2e8f0;
+    }
+
+    /* 頂部狀態 Banner（完美置頂，絕不像按鈕） */
+    .top-status-banner {
+      border-radius: 14px;
+      padding: 14px 16px;
+      text-align: center;
+      font-size: 19px;
+      font-weight: 800;
+      margin-bottom: 22px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+    }
+    .banner-valid {
+      background-color: #ecfdf5;
+      color: #065f46;
+      border: 1.5px solid #a7f3d0;
+    }
+    .banner-redeemed {
+      background-color: #fff1f2;
+      color: #9f1239;
+      border: 1.5px solid #fecdd3;
+    }
+    .redeem-time-text {
+      display: block;
+      font-size: 15px;
+      color: #b91c1c;
+      margin-top: 4px;
+      font-weight: 700;
+    }
+
+    .ticket-serial-title {
+      font-size: 14px;
+      font-weight: 700;
+      color: #64748b;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+    }
+    .ticket-serial-num {
+      font-size: 52px;
+      font-weight: 900;
+      color: #D97706; /* 三位數暖橘色序號 */
+      line-height: 1.1;
+      margin-bottom: 22px;
+    }
+
+    /* 資訊表格：超大字體 */
+    .info-table {
+      background-color: #f8fafc;
+      border-radius: 16px;
+      padding: 18px 20px;
+      margin-bottom: 24px;
+      border: 1px solid #e2e8f0;
+    }
+    .info-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 0;
+      border-bottom: 1px dashed #cbd5e1;
+    }
+    .info-row:last-child {
+      border-bottom: none;
+      padding-bottom: 2px;
+    }
+    .info-label {
+      font-size: 17px;
+      font-weight: 600;
+      color: #64748b;
+    }
+    .info-value {
+      font-size: 21px;
+      font-weight: 800;
+      color: #0f172a;
+      text-align: right;
+    }
+
+    /* 老師專用核銷按鈕 (具備絕對按壓識別度) */
+    .btn-action-redeem {
+      background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%);
+      color: #ffffff;
+      border: none;
+      border-radius: 16px;
+      padding: 18px 20px;
+      font-size: 22px;
+      font-weight: 900;
+      width: 100%;
+      box-shadow: 0 8px 22px rgba(220, 38, 38, 0.4);
+      cursor: pointer;
+    }
+    .btn-action-redeem:active {
+      transform: scale(0.97);
+    }
+    .btn-next-scan {
+      margin-top: 14px;
+      background-color: #f1f5f9;
+      color: #475569;
+      border: 1px solid #cbd5e1;
+      border-radius: 14px;
+      padding: 14px;
+      font-size: 17px;
+      font-weight: 700;
+      width: 100%;
+    }
+    #reader { width: 100%; border-radius: 14px; overflow: hidden; background: #000; }
   </style>
 </head>
-<body class="p-3">
-  <div class="container" style="max-width: 460px;">
-
-    <!-- 頂端身分 -->
-    <div class="text-center mb-3">
-      <h5 class="fw-bold ticket-header">🍗 贏家文教中秋吃肉憑證</h5>
-      <div class="mt-2">
-        <span id="roleBadge" class="guest-badge">📱 學生 / 一般訪客檢視</span>
-      </div>
+<body>
+  <div class="container" style="max-width: 520px;">
+    
+    <div class="text-center mt-2 mb-3">
+      <h3 class="fw-bold text-danger mb-1">🍗 贏家文教中秋搶肉憑證</h3>
+      <div id="modeTag" class="badge bg-dark px-3 py-2 fs-6 rounded-pill">學員專屬兌換憑證</div>
     </div>
 
-    <!-- 載入中 -->
-    <div id="loading" class="text-center my-4 d-none">
-      <div class="spinner-border text-danger" role="status"></div>
-      <div id="loadingText" class="mt-2 text-secondary">正在連線資料庫...</div>
-    </div>
-
-    <div id="errorAlert" class="alert alert-danger d-none" role="alert"></div>
-
-    <!-- 【工作人員模式：原生相機自動掃描區】 -->
-    <div id="scannerSection" class="card-box p-3 text-center mb-3 d-none">
-      <h5 class="fw-bold text-success mb-2">👔 現場核銷機・自動感應掃描中</h5>
-      <div id="scannerWrapper">
-        <video id="videoPreview" playsinline muted></video>
-        <div class="scanner-laser"></div>
-      </div>
-      <p class="text-secondary small mt-2">將鏡頭對準學生手機上的 QR Code，系統會<strong>自動感應讀取</strong></p>
-    </div>
-
-    <!-- 【學生憑證卡片】 -->
-    <div id="ticketCard" class="card-box p-4 d-none">
-      <div class="text-center mb-3">
-        <div class="text-secondary small">兌換券序號</div>
-        <div id="ticketNumText" class="ticket-number">#--</div>
-      </div>
-
-      <div class="p-3 rounded-3 mb-3 bg-light border">
-        <div class="d-flex justify-content-between py-1 border-bottom">
-          <span class="text-secondary">學生姓名</span>
-          <span id="stuNameText" class="fw-bold fs-5 text-dark">--</span>
+    <!-- 老師現場相機掃描模式 -->
+    <div id="teacherMode" class="d-none">
+      <div class="card p-3 mb-3 text-center border-0 shadow-sm">
+        <div id="lineBrowserAlert" class="alert alert-warning d-none text-start small">
+          ⚠️ <strong>檢測到您正在使用 LINE 內建瀏覽器</strong><br>
+          請點擊右上角「`...`」選擇 <strong>「以預設瀏覽器開啟」</strong> 以獲取相機權限。
         </div>
-        <div class="d-flex justify-content-between py-1 border-bottom">
-          <span class="text-secondary">就讀學校</span>
-          <span id="stuSchoolText" class="text-dark">--</span>
-        </div>
-        <div class="d-flex justify-content-between py-1">
-          <span class="text-secondary">聯絡電話</span>
-          <span id="stuPhoneText" class="text-dark">--</span>
-        </div>
+        <div id="reader"></div>
+        <button id="restartBtn" class="btn btn-outline-secondary mt-3 d-none" onclick="startScanner()">📷 重新開啟相機</button>
       </div>
-
-      <!-- 狀態 Badge -->
-      <div id="statusBadge" class="p-3 rounded-3 text-center fw-bold mb-3 fs-5"></div>
-
-      <!-- 核銷按鈕（工作機才看得到） -->
-      <button id="btnRedeem" class="btn btn-redeem w-100 mb-2 d-none" onclick="submitRedeem()">
-        🥩 確認核銷・交付雞胸肉
-      </button>
-
-      <!-- 學生/訪客提示 -->
-      <div id="guestTip" class="text-center text-secondary small p-2 bg-light rounded d-none">
-        ℹ️ 請出示 LINE 聊天室中的專屬 QR Code 由現場老師掃描核銷。
-      </div>
-
-      <!-- 繼續掃下一位按鈕（工作機專用） -->
-      <button id="btnScanNext" class="btn btn-outline-primary w-100 mt-2 d-none" onclick="scanNextStudent()">
-        🔄 繼續掃描下一位學生
-      </button>
     </div>
 
-    <!-- 空白首頁 -->
-    <div id="emptyCard" class="card-box p-4 text-center d-none">
-      <div style="font-size: 2.5rem;">📋</div>
-      <h5 class="fw-bold mt-2">請出示兌換券</h5>
-      <p class="text-secondary small mt-2">請向現場老師出示您的專屬 QR Code 以完成兌換。</p>
+    <!-- 載入中動畫 -->
+    <div id="loading" class="text-center my-5">
+      <div class="spinner-border text-danger" style="width: 3rem; height: 3rem;" role="status"></div>
+      <p class="mt-3 text-secondary fw-bold fs-5">資料讀取中，請稍候...</p>
+    </div>
+
+    <!-- 票卡核心區域 -->
+    <div id="ticketCard" class="ticket-card text-center d-none">
+      
+      <!-- 頂部狀態列 -->
+      <div id="topStatusBanner" class="top-status-banner banner-valid">
+        <span>✅ 憑證有效（尚未領取）</span>
+      </div>
+
+      <div class="ticket-serial-title">兌換序號</div>
+      <div id="ticketNumber" class="ticket-serial-num">000</div>
+
+      <div class="info-table text-start">
+        <div class="info-row">
+          <span class="info-label">學生姓名</span>
+          <span id="infoName" class="info-value">--</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">就讀學校</span>
+          <span id="infoSchool" class="info-value">--</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">聯絡電話</span>
+          <span id="infoPhone" class="info-value">--</span>
+        </div>
+      </div>
+
+      <div id="staffActionArea" class="d-none">
+        <button id="redeemBtn" class="btn-action-redeem" onclick="doManualVerify()">
+          🥩 確認核銷・交付雞胸肉
+        </button>
+      </div>
+
+      <div id="nextScanArea" class="d-none">
+        <button class="btn-next-scan" onclick="location.reload()">
+          🔄 繼續掃描下一位同學
+        </button>
+      </div>
+    </div>
+
+    <div id="errorCard" class="text-center my-4 d-none">
+      <h5 id="errorText" class="text-danger fw-bold bg-warning p-3 rounded-3 border border-danger"></h5>
     </div>
 
   </div>
 
   <script>
-    // 您的 Google Apps Script 後端 API 網址
-    const GAS_API_URL = "https://script.google.com/macros/s/AKfycbzcU94hhP2ttv2HuzoZVZ5Z0SYi90K12j9XDi_bqHkek47Ae4Exb_AjAaucJlsVODWw/exec";
+    if (window.top !== window.self) {
+      window.top.location.href = window.location.href;
+    }
 
-    var urlParams = new URLSearchParams(window.location.search);
-    var targetHash = (urlParams.get('hash') || "").trim();
-    var targetStaff = (urlParams.get('staff') || "").trim();
+    // ==========================================
+    // 🔗 請務必填入你目前正式啟用的 GAS Web App 部署網址！
+    // ==========================================
+    const GAS_WEB_APP_URL = "https://script.google.com/macros/s/你的GAS實際ID/exec"; 
 
-    var codeReader = null;
-    var currentTargetHash = targetHash;
+    let html5QrcodeScanner = null;
+    let currentHash = "";
+    let staffKey = "";
 
     window.onload = function() {
-      // 1. 如果帶有 staff 參數
-      if (targetStaff && targetStaff.startsWith("staff_")) {
-        document.getElementById('roleBadge').className = "staff-badge";
-        document.getElementById('roleBadge').innerText = "👔 贏家工作人員模式 (現場核銷專用機)";
+      const urlParams = new URLSearchParams(window.location.search);
+      currentHash = urlParams.get('hash') || "";
+      staffKey = urlParams.get('staff') || "";
 
-        if (targetHash) {
-          fetchTicket(targetHash, true);
-        } else {
-          initContinuousScanner();
-        }
-        return;
+      if (staffKey) {
+        document.getElementById('modeTag').className = "badge bg-primary px-3 py-2 fs-6 rounded-pill";
+        document.getElementById('modeTag').innerText = "👮 贏家工作人員現場核銷機";
       }
 
-      // 2. 如果只有帶 hash（學生卡片檢視）
-      if (targetHash) {
-        fetchTicket(targetHash, false);
-        return;
+      if (!currentHash) {
+        const raw = window.location.href;
+        const match = raw.match(/[?&]hash=([^&]+)/);
+        if (match) currentHash = match[1];
       }
 
-      // 3. 空首頁
-      document.getElementById('emptyCard').classList.remove('d-none');
+      if (currentHash) {
+        document.getElementById('teacherMode').classList.add('d-none');
+        fetchTicketData(currentHash);
+      } else {
+        document.getElementById('loading').classList.add('d-none');
+        document.getElementById('teacherMode').classList.remove('d-none');
+        checkLineBrowser();
+        startScanner();
+      }
     };
 
-    function initContinuousScanner() {
-      document.getElementById('scannerSection').classList.remove('d-none');
-      document.getElementById('ticketCard').classList.add('d-none');
+    function checkLineBrowser() {
+      const ua = navigator.userAgent || navigator.vendor || window.opera;
+      if (ua.indexOf("Line") > -1) {
+        document.getElementById('lineBrowserAlert').classList.remove('d-none');
+      }
+    }
 
-      codeReader = new ZXing.BrowserQRCodeReader();
-      codeReader.decodeFromVideoDevice(undefined, 'videoPreview', function(result, err) {
-        if (result && result.text) {
-          var matchedHash = parseHash(result.text);
-          if (matchedHash) {
-            stopScanner();
-            fetchTicket(matchedHash, true);
-          }
+    function startScanner() {
+      document.getElementById('errorCard').classList.add('d-none');
+      document.getElementById('restartBtn').classList.add('d-none');
+
+      if (!html5QrcodeScanner) {
+        html5QrcodeScanner = new Html5Qrcode("reader");
+      }
+
+      const config = { fps: 10, qrbox: { width: 250, height: 250 } };
+      
+      html5QrcodeScanner.start(
+        { facingMode: "environment" },
+        config,
+        (decodedText) => {
+          html5QrcodeScanner.stop().then(() => {
+            let hash = decodedText;
+            if (decodedText.includes('hash=')) {
+              const match = decodedText.match(/[?&]hash=([^&]+)/);
+              if (match) hash = match[1];
+            }
+            currentHash = hash;
+            fetchTicketData(hash);
+          });
         }
-      }).catch(function(err) {
-        alert("相機開啟提示：" + err);
+      ).catch(err => {
+        document.getElementById('loading').classList.add('d-none');
+        showError("無法啟動相機！請確認相機權限。");
       });
     }
 
-    function stopScanner() {
-      if (codeReader) codeReader.reset();
-      document.getElementById('scannerSection').classList.add('d-none');
-    }
-
-    function scanNextStudent() {
-      document.getElementById('ticketCard').classList.add('d-none');
-      initContinuousScanner();
-    }
-
-    function parseHash(url) {
-      var m = url.match(/[?&]hash=([^&]+)/);
-      return m ? decodeURIComponent(m[1]) : "";
-    }
-
-    // 透過 fetch 連回 GAS 後端查詢
-    function fetchTicket(hash, isStaff) {
-      currentTargetHash = hash;
+    function fetchTicketData(hash) {
       document.getElementById('loading').classList.remove('d-none');
-      document.getElementById('loadingText').innerText = "正在查詢學生資料...";
       document.getElementById('ticketCard').classList.add('d-none');
-      document.getElementById('errorAlert').classList.add('d-none');
+      document.getElementById('errorCard').classList.add('d-none');
 
-      fetch(GAS_API_URL + "?action=getDetails&hash=" + encodeURIComponent(hash))
+      // GitHub Pages 透過 JSON API 跨域向 GAS 抓取資料
+      const apiUrl = GAS_WEB_APP_URL + "?action=getDetails&hash=" + encodeURIComponent(hash);
+      fetch(apiUrl)
         .then(res => res.json())
-        .then(res => {
-          document.getElementById('loading').classList.add('d-none');
-          if (!res.success) {
-            showError(res.msg);
-            if (isStaff) document.getElementById('btnScanNext').classList.remove('d-none');
-            return;
-          }
-
-          document.getElementById('ticketCard').classList.remove('d-none');
-          document.getElementById('ticketNumText').innerText = res.ticketNum;
-          document.getElementById('stuNameText').innerText = res.name;
-          
-          var schoolInfo = res.school;
-          if (res.grade) {
-            schoolInfo += " " + res.grade + (res.grade.indexOf("班") === -1 ? "班" : "");
-          }
-          document.getElementById('stuSchoolText').innerText = schoolInfo;
-          document.getElementById('stuPhoneText').innerText = res.phone;
-
-          var badge = document.getElementById('statusBadge');
-          var btn = document.getElementById('btnRedeem');
-          var tip = document.getElementById('guestTip');
-          var nextBtn = document.getElementById('btnScanNext');
-
-          if (res.status === "已領取") {
-            badge.className = "p-3 rounded-3 text-center fw-bold mb-3 fs-6 bg-danger text-white";
-            badge.innerHTML = "❌ 已於 " + res.redeemTime + " 核銷領取";
-            btn.classList.add('d-none');
-            tip.classList.add('d-none');
-            if (isStaff) nextBtn.classList.remove('d-none');
-          } else {
-            badge.className = "p-3 rounded-3 text-center fw-bold mb-3 fs-6 bg-success text-white";
-            badge.innerHTML = "✅ 憑證有效（尚未領取）";
-
-            if (isStaff) {
-              btn.classList.remove('d-none');
-              tip.classList.add('d-none');
-              nextBtn.classList.remove('d-none');
-            } else {
-              btn.classList.add('d-none');
-              tip.classList.remove('d-none');
-              nextBtn.classList.add('d-none');
-            }
-          }
-        })
-        .catch(err => {
-          document.getElementById('loading').classList.add('d-none');
-          showError("查詢出錯：" + err);
-        });
+        .then(data => renderCard(data))
+        .catch(err => showError("❌ 網路連線錯誤，請檢查 GAS 部署網址。"));
     }
 
-    // 透過 fetch 連回 GAS 後端執行核銷
-    function submitRedeem() {
-      if (!confirm("確定要現場核銷此兌換券，並交付烤雞胸肉 1 份嗎？")) return;
+    function renderCard(data) {
+      document.getElementById('loading').classList.add('d-none');
 
-      var btn = document.getElementById('btnRedeem');
+      if (!data || !data.success) {
+        showError(data ? data.message : "系統查無此票券資料");
+        return;
+      }
+
+      document.getElementById('ticketCard').classList.remove('d-none');
+      
+      // 強制轉為三位數序號 (例如 001)
+      let numStr = String(data.ticketNum || "1").replace(/[^0-9]/g, '');
+      if (numStr === "") numStr = "1";
+      document.getElementById('ticketNumber').innerText = numStr.padStart(3, '0');
+
+      document.getElementById('infoName').innerText = data.name || data.studentName || "未填寫";
+      document.getElementById('infoSchool').innerText = data.school || "未填寫";
+      document.getElementById('infoPhone').innerText = data.phone || "未填寫";
+
+      const banner = document.getElementById('topStatusBanner');
+      const staffArea = document.getElementById('staffActionArea');
+
+      if (data.isRedeemed) {
+        banner.className = "top-status-banner banner-redeemed";
+        banner.innerHTML = `<div>⚠️ 此票券已於稍早領取！<span class="redeem-time-text">${data.redeemTime}</span></div>`;
+        staffArea.classList.add('d-none');
+        if (staffKey) document.getElementById('nextScanArea').classList.remove('d-none');
+      } else {
+        banner.className = "top-status-banner banner-valid";
+        banner.innerHTML = `<span>✅ 憑證有效・尚未領取</span>`;
+        
+        if (staffKey) {
+          staffArea.classList.remove('d-none');
+        }
+      }
+    }
+
+    function doManualVerify() {
+      if (!confirm("確定要核銷此學生的票券並交付雞胸肉嗎？")) return;
+
+      const btn = document.getElementById('redeemBtn');
       btn.disabled = true;
-      btn.innerText = "⏳ 正在寫入核銷資料...";
+      btn.innerText = "⏳ 處理中...";
 
-      fetch(GAS_API_URL + "?action=redeem&hash=" + encodeURIComponent(currentTargetHash))
-        .then(res => res.json())
+      const url = `${GAS_WEB_APP_URL}?action=redeem&hash=${encodeURIComponent(currentHash)}&staff=${encodeURIComponent(staffKey)}`;
+      fetch(url)
+        .then(r => r.json())
         .then(res => {
-          btn.disabled = false;
-          btn.innerText = "🥩 確認核銷・交付雞胸肉";
-          alert(res.msg);
-          if (res.success) {
-            fetchTicket(currentTargetHash, true);
-          }
+          alert(res.message);
+          location.reload();
         })
-        .catch(err => {
+        .catch(e => {
+          alert("核銷請求失敗！");
           btn.disabled = false;
           btn.innerText = "🥩 確認核銷・交付雞胸肉";
-          alert("核銷失敗：" + err);
         });
     }
 
     function showError(msg) {
-      var box = document.getElementById('errorAlert');
-      box.innerText = msg;
-      box.classList.remove('d-none');
+      document.getElementById('loading').classList.add('d-none');
+      const errCard = document.getElementById('errorCard');
+      errCard.classList.remove('d-none');
+      document.getElementById('errorText').innerText = msg;
     }
   </script>
 </body>
