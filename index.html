@@ -77,6 +77,12 @@
       </div>
     </div>
 
+    <!-- 掃描瞬間的讀取動畫區（解決掃了沒反應的疑惑） -->
+    <div id="loading" class="card-box text-center py-5 d-none">
+      <div class="spinner-border text-success" role="status" style="width: 3.5rem; height: 3.5rem;"></div>
+      <div class="mt-3 text-secondary fw-bold fs-5">正在讀取憑證資料...</div>
+    </div>
+
     <div id="errorAlert" class="alert alert-danger d-none fw-bold text-center p-3 mb-3 rounded-4 shadow-sm" role="alert"></div>
     <div id="errorActionArea" class="text-center mb-3 d-none">
       <button class="btn btn-scan-next w-100 py-3 shadow-sm" onclick="scanNextStudent()">
@@ -84,6 +90,7 @@
       </button>
     </div>
 
+    <!-- 自動感應掃描區 -->
     <div id="scannerSection" class="card-box p-3 text-center mb-3 d-none">
       <h5 class="fw-bold text-success mb-2">🟢 自動感應掃描中</h5>
       <div id="scannerWrapper">
@@ -93,13 +100,14 @@
       <p class="text-secondary small mt-3">將鏡頭對準學生 QR Code，系統會<strong>自動感應讀取</strong></p>
     </div>
 
+    <!-- 學生憑證資訊卡片 -->
     <div id="ticketCard" class="card-box text-center d-none">
       <div id="topStatusBanner" class="top-status-banner banner-valid">
         <span>✅ 憑證有效・尚未領取</span>
       </div>
 
       <div class="ticket-serial-title">兌換券序號</div>
-      <!-- 強制行內寫死暖橘色，杜絕任何 CSS 覆蓋 -->
+      <!-- 強制行內寫死暖橘色，杜絕任何覆蓋 -->
       <div id="ticketNumText" style="font-size: 52px; font-weight: 950; color: #D97706 !important; line-height: 1.1; margin-bottom: 20px;">000</div>
 
       <div class="info-table text-start">
@@ -146,6 +154,7 @@
       document.getElementById('ticketCard').classList.add('d-none');
       document.getElementById('errorAlert').classList.add('d-none');
       document.getElementById('errorActionArea').classList.add('d-none');
+      document.getElementById('loading').classList.add('d-none');
 
       codeReader = new ZXing.BrowserQRCodeReader();
       codeReader.decodeFromVideoDevice(undefined, 'videoPreview', function(result, err) {
@@ -153,6 +162,8 @@
           var matchedHash = parseHash(result.text);
           if (matchedHash) {
             stopScanner();
+            // 掃描到的瞬間立刻顯示轉圈圈，給予視覺反饋
+            document.getElementById('loading').classList.remove('d-none');
             fetchTicket(matchedHash);
           }
         }
@@ -168,6 +179,7 @@
       document.getElementById('ticketCard').classList.add('d-none');
       document.getElementById('errorAlert').classList.add('d-none');
       document.getElementById('errorActionArea').classList.add('d-none');
+      document.getElementById('loading').classList.add('d-none');
       initContinuousScanner();
     }
 
@@ -178,13 +190,13 @@
 
     function fetchTicket(hash) {
       currentTargetHash = hash;
-      document.getElementById('ticketCard').classList.add('d-none');
-      document.getElementById('errorAlert').classList.add('d-none');
-      document.getElementById('errorActionArea').classList.add('d-none');
 
       fetch(GAS_API_URL + "?action=getDetails&hash=" + encodeURIComponent(hash))
         .then(res => res.json())
         .then(res => {
+          // 資料撈到後，立刻藏起轉圈圈
+          document.getElementById('loading').classList.add('d-none');
+
           if (!res.success) {
             showError(res.message || res.msg || "❌ 查無此票券");
             document.getElementById('errorActionArea').classList.remove('d-none');
@@ -217,12 +229,12 @@
           } else {
             banner.className = "top-status-banner banner-valid";
             banner.innerHTML = "<span>✅ 憑證有效・尚未領取</span>";
-            btn.classList.add('d-none');
             btn.classList.remove('d-none');
             nextBtn.classList.remove('d-none');
           }
         })
         .catch(err => {
+          document.getElementById('loading').classList.add('d-none');
           showError("❌ 網路連線出錯，請檢查網路！");
           document.getElementById('errorActionArea').classList.remove('d-none');
         });
