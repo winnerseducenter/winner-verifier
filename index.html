@@ -18,15 +18,17 @@
     }
     .ticket-header { font-size: 1.35rem; font-weight: bold; color: #0f172a; }
     
-    /* 參考圖風格：高質感綠色狀態 Banner */
+    /* 狀態 Banner 樣式 */
     .top-status-banner {
       border-radius: 16px; padding: 16px; text-align: center; font-size: 18px; 
       font-weight: 800; margin-bottom: 20px; display: flex; align-items: center; 
-      justify-content: center; gap: 8px; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.12);
+      justify-content: center; gap: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.04);
     }
     .banner-valid { background-color: #ecfdf5; color: #059669; border: 1.5px solid #a7f3d0; }
     .banner-redeemed { background-color: #fff1f2; color: #9f1239; border: 1.5px solid #fecdd3; }
-    .banner-success-action { background-color: #10b981; color: #ffffff; border: 1.5px solid #059669; }
+    
+    /* 核銷成功專用：改用喜氣、醒目的磚紅色系，與未領取的綠色完美區隔 */
+    .banner-success-action { background-color: #fff1f2; color: #9f1239; border: 1.5px solid #fecdd3; box-shadow: 0 4px 12px rgba(159, 18, 57, 0.12); }
 
     .redeem-time-sub { display: block; font-size: 14px; color: #b91c1c; margin-top: 4px; font-weight: 700; }
 
@@ -39,7 +41,7 @@
     .info-label { font-size: 17px; font-weight: 600; color: #64748b; }
     .info-value { font-size: 21px; font-weight: 800; color: #0f172a; text-align: right; }
 
-    /* 參考圖風格：舒服的薄荷/翡翠綠確認按鈕 */
+    /* 確認核銷按鈕：清爽翡翠綠 */
     .btn-redeem { 
       background-color: #10b981; border: none; font-size: 19px; font-weight: 800; 
       padding: 16px 20px; border-radius: 16px; color: white; 
@@ -93,7 +95,7 @@
       <p class="text-secondary small mt-3">將鏡頭對準學生 QR Code，系統會<strong>自動感應讀取</strong></p>
     </div>
 
-    <!-- 學生憑證資訊卡片（包含底部完整邊框收納） -->
+    <!-- 學生憑證資訊卡片 -->
     <div id="ticketCard" class="card-box text-center d-none">
       <div id="topStatusBanner" class="top-status-banner banner-valid">
         <span>✅ 憑證有效（尚未領取）</span>
@@ -125,7 +127,6 @@
   </div>
 
   <script>
-    // 🔗 請務必填入你目前正式啟用的 GAS Web App 部署網址！
     const GAS_API_URL = "https://script.google.com/macros/s/AKfycbzcU94hhP2ttv2HuzoZVZ5Z0SYi90K12j9XDi_bqHkek47Ae4Exb_AjAaucJlsVODWw/exec";
 
     var urlParams = new URLSearchParams(window.location.search);
@@ -187,7 +188,6 @@
         .then(res => res.json())
         .then(res => {
           if (!res.success) {
-            // 防呆機制：完全隱藏幽靈票卡，只留乾淨的錯誤紅框與底部外框重試按鈕
             showError(res.message || res.msg || "❌ 查無此票券");
             document.getElementById('errorActionArea').classList.remove('d-none');
             return;
@@ -219,6 +219,7 @@
           } else {
             banner.className = "top-status-banner banner-valid";
             banner.innerHTML = "<span>✅ 憑證有效・尚未領取</span>";
+            btn.classList.add('d-none'); // 預設安全起見，等下防呆
             btn.classList.remove('d-none');
             nextBtn.classList.remove('d-none');
           }
@@ -240,7 +241,7 @@
         .then(res => res.json())
         .then(res => {
           if (res.success) {
-            // 核銷成功：無縫切換成參考圖風格的清爽綠色成功 Banner
+            // 核銷成功：無縫切換成醒目的磚紅色成功提示，與未領取的綠色做出清楚區隔
             var banner = document.getElementById('topStatusBanner');
             banner.className = "top-status-banner banner-success-action";
             banner.innerHTML = "🎉 核銷成功！請現場交付雞肉";
